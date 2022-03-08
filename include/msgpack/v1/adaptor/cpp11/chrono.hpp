@@ -17,8 +17,6 @@
 
 #include <chrono>
 
-// #include <boost/numeric/conversion/cast.hpp>
-
 namespace msgpack {
 
 /// @cond
