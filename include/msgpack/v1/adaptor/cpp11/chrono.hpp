@@ -17,7 +17,7 @@
 
 #include <chrono>
 
-#include <boost/numeric/conversion/cast.hpp>
+// #include <boost/numeric/conversion/cast.hpp>
 
 namespace msgpack {
 
@@ -42,7 +42,7 @@ struct as<std::chrono::time_point<Clock, Duration>> {
         case 8: {
             uint64_t value;
             _msgpack_load64(uint64_t, o.via.ext.data(), &value);
-            uint32_t nanosec = boost::numeric_cast<uint32_t>(value >> 34);
+            uint32_t nanosec = value >> 34;
             uint64_t sec = value & 0x00000003ffffffffLL;
             tp += std::chrono::duration_cast<Duration>(
                 std::chrono::nanoseconds(nanosec));
@@ -66,7 +66,7 @@ struct as<std::chrono::time_point<Clock, Duration>> {
                 else {
                     ++sec;
                     tp += std::chrono::seconds(sec);
-                    int64_t ns = boost::numeric_cast<int64_t>(nanosec) - 1000000000L;
+                    int64_t ns = nanosec - 1000000000L;
                     tp += std::chrono::duration_cast<Duration>(
                         std::chrono::nanoseconds(ns));
                 }
@@ -95,7 +95,7 @@ struct convert<std::chrono::time_point<Clock, Duration>> {
         case 8: {
             uint64_t value;
             _msgpack_load64(uint64_t, o.via.ext.data(), &value);
-            uint32_t nanosec = boost::numeric_cast<uint32_t>(value >> 34);
+            uint32_t nanosec = value >> 34;
             uint64_t sec = value & 0x00000003ffffffffLL;
             tp += std::chrono::duration_cast<Duration>(
                 std::chrono::nanoseconds(nanosec));
@@ -120,7 +120,7 @@ struct convert<std::chrono::time_point<Clock, Duration>> {
                 else {
                     ++sec;
                     tp += std::chrono::seconds(sec);
-                    int64_t ns = boost::numeric_cast<int64_t>(nanosec) - 1000000000L;
+                    int64_t ns = nanosec - 1000000000L;
                     tp += std::chrono::duration_cast<Duration>(
                         std::chrono::nanoseconds(ns));
                 }
@@ -139,7 +139,7 @@ template <typename Clock, typename Duration>
 struct pack<std::chrono::time_point<Clock, Duration>> {
     template <typename Stream>
     msgpack::packer<Stream>& operator()(msgpack::packer<Stream>& o, std::chrono::time_point<Clock, Duration> const& v) const {
-        int64_t count = boost::numeric_cast<int64_t>(v.time_since_epoch().count());
+        int64_t count = v.time_since_epoch().count();
         int64_t nano_num =
             Duration::period::ratio::num *
             (1000000000L / Duration::period::ratio::den);
@@ -155,11 +155,11 @@ struct pack<std::chrono::time_point<Clock, Duration>> {
             / Duration::period::ratio::den;
 
         if ((sec >> 34) == 0) {
-            uint64_t data64 = (boost::numeric_cast<uint64_t>(nanosec) << 34) | boost::numeric_cast<uint64_t>(sec);
+            uint64_t data64 = (nanosec << 34) | sec;
             if ((data64 & 0xffffffff00000000L) == 0) {
                 // timestamp 32
                 o.pack_ext(4, -1);
-                uint32_t data32 = boost::numeric_cast<uint32_t>(data64);
+                uint32_t data32 = data64;
                 char buf[4];
                 _msgpack_store32(buf, data32);
                 o.pack_ext_body(buf, 4);
@@ -178,7 +178,7 @@ struct pack<std::chrono::time_point<Clock, Duration>> {
             char buf[12];
 
 
-            _msgpack_store32(&buf[0], boost::numeric_cast<uint32_t>(nanosec));
+            _msgpack_store32(&buf[0], nanosec);
             _msgpack_store64(&buf[4], sec);
             o.pack_ext_body(buf, 12);
         }
@@ -189,7 +189,7 @@ struct pack<std::chrono::time_point<Clock, Duration>> {
 template <typename Clock, typename Duration>
 struct object_with_zone<std::chrono::time_point<Clock, Duration>> {
     void operator()(msgpack::object::with_zone& o, const std::chrono::time_point<Clock, Duration>& v) const {
-        int64_t count = boost::numeric_cast<int64_t>(v.time_since_epoch().count());
+        int64_t count = v.time_since_epoch().count();
 
         int64_t nano_num =
             Duration::period::ratio::num *
@@ -205,14 +205,14 @@ struct object_with_zone<std::chrono::time_point<Clock, Duration>> {
             * Duration::period::ratio::num
             / Duration::period::ratio::den;
         if ((sec >> 34) == 0) {
-            uint64_t data64 = (boost::numeric_cast<uint64_t>(nanosec) << 34) | boost::numeric_cast<uint64_t>(sec);
+            uint64_t data64 = (nanosec << 34) | sec;
             if ((data64 & 0xffffffff00000000L) == 0) {
                 // timestamp 32
                 o.type = msgpack::type::EXT;
                 o.via.ext.size = 4;
                 char* p = static_cast<char*>(o.zone.allocate_no_align(o.via.ext.size + 1));
                 p[0] = static_cast<char>(-1);
-                uint32_t data32 = boost::numeric_cast<uint32_t>(data64);
+                uint32_t data32 = data64;
                 _msgpack_store32(&p[1], data32);
                 o.via.ext.ptr = p;
             }
@@ -232,7 +232,7 @@ struct object_with_zone<std::chrono::time_point<Clock, Duration>> {
             o.via.ext.size = 12;
             char* p = static_cast<char*>(o.zone.allocate_no_align(o.via.ext.size + 1));
             p[0] = static_cast<char>(-1);
-            _msgpack_store32(&p[1], boost::numeric_cast<uint32_t>(nanosec));
+            _msgpack_store32(&p[1], nanosec);
             _msgpack_store64(&p[1 + 4], sec);
             o.via.ext.ptr = p;
         }
